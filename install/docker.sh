@@ -1,27 +1,37 @@
-#!/bin/bash
+#!/bin/sh
+# Install Docker on Ubuntu
 set -e
 
 echo "🚀 Starting official Docker Engine installation..."
 
-# 1. Update package list and install prerequisites
-sudo apt update && sudo apt install -y ca-certificates curl
-
-# 2. Add Docker's official GPG key
+## Update package index, install prereqs
+sudo apt update
+sudo apt install ca-certificates curl gnupg
 sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://docker.com -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
-# 3. Add the Docker repository to Apt sources
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+## Add Docker repository to APT sources
+echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# 4. Install Docker packages
-sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+## Install Docker packages
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# 5. Enable Docker to start on boot
+sudo usermod -aG docker ${USER}
+su - ${USER}
+
+sudo systemctl status docker
+docker run --rm hello-world
+
+# Enable Docker to start on boot
 sudo systemctl enable docker
 sudo systemctl start docker
 
-# 6. Set up non-root user permissions (adds the current user)
+# Set up non-root user permissions (adds the current user)
 if ! getent group docker > /dev/null; then
     sudo groupadd docker
 fi
